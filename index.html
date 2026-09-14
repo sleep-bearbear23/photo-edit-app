@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Photos">
+<meta name="format-detection" content="telephone=no">
+<title>Sc9 Phone UI — Warp Lab v01</title>
+<style>
+  /* ---- global kill-the-web-tells ---- */
+  * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+      -webkit-tap-highlight-color: rgba(0,0,0,0); box-sizing: border-box; }
+  html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden;
+      background:#000; color:#fff;
+      font-family:-apple-system,"Helvetica Neue",Helvetica,Arial,sans-serif;
+      -webkit-font-smoothing:antialiased; touch-action:none; overscroll-behavior:none; }
+  #app { position:fixed; inset:0; background:#000; }
+
+  /* ---- fake 2015 iOS status bar ---- */
+  #statusbar { position:absolute; top:0; left:0; right:0; height:20px; z-index:200;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 6px; font-size:13px; font-weight:500; letter-spacing:.2px;
+      color:#fff; pointer-events:none; }
+  #statusbar.dark { color:#000; }
+  #sb-left { display:flex; align-items:center; gap:4px; }
+  #sb-right { display:flex; align-items:center; gap:4px; }
+  .sb-dots { letter-spacing:1px; font-size:12px; }
+  .sb-batt { width:22px; height:10px; border:1px solid currentColor; border-radius:2px;
+      position:relative; opacity:.95; }
+  .sb-batt::after { content:""; position:absolute; right:-3px; top:2.5px; width:1.5px; height:5px;
+      background:currentColor; border-radius:0 1px 1px 0; }
+  .sb-batt > i { position:absolute; inset:1px; width:78%; background:currentColor; border-radius:1px; display:block; }
+  #sb-time { position:absolute; left:50%; transform:translateX(-50%); font-weight:600; }
+
+  /* ---- screens ---- */
+  .screen { position:absolute; inset:0; display:none; }
+  .screen.active { display:block; }
+
+  /* ---- GALLERY (2015 Photos) ---- */
+  #gallery { background:#fff; color:#000; }
+  #gallery .navbar { position:absolute; top:0; left:0; right:0; height:64px; z-index:60;
+      background:rgba(248,248,248,.94); -webkit-backdrop-filter:saturate(180%) blur(20px);
+      backdrop-filter:saturate(180%) blur(20px);
+      border-bottom:.5px solid #b2b2b2; display:flex; align-items:flex-end; }
+  #gallery .navbar .row { height:44px; width:100%; display:flex; align-items:center;
+      justify-content:center; position:relative; }
+  #gallery .navbar .title { font-size:17px; font-weight:600; color:#000; }
+  #gallery .navbar .back { position:absolute; left:8px; color:#0079ff; font-size:17px;
+      display:flex; align-items:center; gap:1px; }
+  #gallery .navbar .chev { font-size:22px; line-height:1; margin-top:-1px; }
+  #gallery .navbar .sub { position:absolute; bottom:2px; left:0; right:0; text-align:center;
+      font-size:11px; color:#8a8a8f; }
+  #grid { position:absolute; top:64px; bottom:49px; left:0; right:0; overflow-y:auto;
+      -webkit-overflow-scrolling:touch; }
+  #grid .rowlabel { padding:7px 10px 4px; font-size:15px; font-weight:600; color:#000;
+      position:sticky; top:0; background:rgba(255,255,255,.92); }
+  #grid .rowlabel span { display:block; font-size:11px; font-weight:400; color:#8a8a8f; }
+  .thumbs { display:grid; grid-template-columns:repeat(4,1fr); gap:1.5px; padding:0 0 2px; }
+  .thumb { position:relative; width:100%; padding-top:100%; overflow:hidden; background:#e8e8e8; }
+  .thumb canvas, .thumb img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .thumb.sel::after { content:"✓"; position:absolute; right:3px; bottom:3px; width:16px; height:16px;
+      background:#0079ff; color:#fff; border-radius:50%; font-size:11px; text-align:center; line-height:16px; }
+  #gallery .tabbar { position:absolute; bottom:0; left:0; right:0; height:49px; z-index:60;
+      background:rgba(248,248,248,.94); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px);
+      border-top:.5px solid #b2b2b2; display:flex; }
+  #gallery .tabbar .tab { flex:1; display:flex; flex-direction:column; align-items:center;
+      justify-content:center; gap:2px; font-size:10px; color:#929292; }
+  #gallery .tabbar .tab.on { color:#0079ff; }
+  #gallery .tabbar .tab .ic { font-size:19px; line-height:1; }
+
+  /* ---- FULL-SCREEN PHOTO VIEW ---- */
+  #photoview { background:#fff; color:#000; }
+  #photoview .pv-nav { position:absolute; top:0; left:0; right:0; height:64px; z-index:60;
+      background:rgba(248,248,248,.94); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px);
+      border-bottom:.5px solid #b2b2b2; display:flex; align-items:flex-end; }
+  #photoview .pv-nav .row { height:44px; width:100%; position:relative; display:flex;
+      align-items:center; justify-content:center; }
+  #photoview .pv-nav .back { position:absolute; left:8px; color:#0079ff; font-size:17px;
+      display:flex; align-items:center; }
+  #photoview .pv-nav .title { font-size:13px; font-weight:600; color:#000; text-align:center; line-height:1.1; }
+  #photoview .pv-nav .title span { display:block; font-size:11px; font-weight:400; color:#8a8a8f; }
+  #pv-stage { position:absolute; top:64px; bottom:44px; left:0; right:0; background:#fff;
+      display:flex; align-items:center; justify-content:center; }
+  #pv-stage canvas { max-width:100%; max-height:100%; }
+  #photoview .pv-tools { position:absolute; bottom:0; left:0; right:0; height:44px; z-index:60;
+      background:rgba(248,248,248,.94); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px);
+      border-top:.5px solid #b2b2b2; display:flex; align-items:center; justify-content:space-between;
+      padding:0 4px; color:#0079ff; }
+  #photoview .pv-tools .t { width:40px; text-align:center; font-size:20px; }
+  #photoview .pv-tools .edit { font-size:16px; padding:0 12px; font-weight:400; }
+
+  /* ---- EDITOR / WARP LAB ---- */
+  #editor { background:#000; color:#fff; }
+  #ed-top { position:absolute; top:20px; left:0; right:0; height:44px; z-index:60;
+      display:flex; align-items:center; justify-content:space-between; padding:0 6px;
+      background:#0c0c0c; border-bottom:.5px solid #262626; }
+  #ed-top .x, #ed-top .ok { font-size:22px; width:40px; text-align:center; }
+  #ed-top .ok { color:#3af0c0; }
+  #ed-top .ttl { font-size:13px; color:#9a9a9a; }
+  #ed-stage { position:absolute; top:64px; bottom:150px; left:0; right:0; background:#000;
+      overflow:hidden; }
+  #warpCanvas, #glCanvas { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+      touch-action:none; }
+  #glCanvas { display:none; }
+  #ed-badge { position:absolute; top:6px; left:6px; z-index:40; font-size:10px; line-height:1.4;
+      color:#8affea; background:rgba(0,0,0,.45); padding:3px 6px; border-radius:4px;
+      font-variant-numeric:tabular-nums; pointer-events:none; }
+  #ed-orig-flag { position:absolute; top:6px; right:6px; z-index:40; font-size:10px;
+      color:#fff; background:rgba(255,60,60,.85); padding:3px 7px; border-radius:4px;
+      opacity:0; transition:opacity .08s; pointer-events:none; letter-spacing:.5px; }
+
+  /* A/B technique switch */
+  #ab-switch { position:absolute; bottom:150px; left:0; right:0; height:0; }
+  #tech { position:absolute; bottom:106px; left:50%; transform:translateX(-50%); z-index:55;
+      display:flex; background:#161616; border:1px solid #333; border-radius:8px; overflow:hidden; }
+  #tech button { background:none; border:none; color:#8a8a8a; font-size:12px; font-weight:600;
+      padding:7px 14px; font-family:inherit; }
+  #tech button.on { background:#2b2b2b; color:#3af0c0; }
+  #tech button:first-child.on { color:#ffd24a; }
+
+  /* tool tray */
+  #ed-tools { position:absolute; bottom:44px; left:0; right:0; height:62px; z-index:55;
+      background:#0c0c0c; border-top:.5px solid #1e1e1e; display:flex; align-items:center;
+      justify-content:space-around; padding:0 4px; }
+  .tool { display:flex; flex-direction:column; align-items:center; gap:4px; color:#7d7d7d;
+      font-size:9.5px; width:56px; }
+  .tool.on { color:#fff; }
+  .tool .ic { width:30px; height:30px; border-radius:50%; border:1.5px solid currentColor;
+      display:flex; align-items:center; justify-content:center; font-size:15px; }
+  .tool.on .ic { background:#242424; }
+
+  /* bottom bar: brush size + before/after */
+  #ed-bottom { position:absolute; bottom:0; left:0; right:0; height:44px; z-index:55;
+      background:#000; display:flex; align-items:center; gap:10px; padding:0 12px;
+      border-top:.5px solid #1e1e1e; }
+  #ed-bottom .lbl { font-size:10px; color:#7d7d7d; width:34px; }
+  #brush { -webkit-appearance:none; appearance:none; flex:1; height:2px; background:#3a3a3a; border-radius:2px; }
+  #brush::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; border-radius:50%;
+      background:#fff; box-shadow:0 0 3px rgba(0,0,0,.6); }
+  #compare { flex:0 0 auto; font-size:11px; color:#fff; background:#242424; border:1px solid #3a3a3a;
+      border-radius:14px; padding:7px 12px; font-family:inherit; }
+  #compare.holding { background:#3af0c0; color:#000; border-color:#3af0c0; }
+  #reset { flex:0 0 auto; font-size:11px; color:#ff8080; background:none; border:none; font-family:inherit; }
+
+  /* brush ring cursor */
+  #ring { position:absolute; z-index:45; border:1.5px solid rgba(255,255,255,.8);
+      border-radius:50%; pointer-events:none; transform:translate(-50%,-50%); display:none;
+      box-shadow:0 0 0 1px rgba(0,0,0,.35), inset 0 0 0 1px rgba(0,0,0,.35); }
+
+  /* boot / help toast */
+  #toast { position:absolute; bottom:158px; left:12px; right:12px; z-index:70; text-align:center;
+      font-size:12px; color:#cfcfcf; background:rgba(20,20,20,.9); border:1px solid #2a2a2a;
+      border-radius:9px; padding:9px 12px; transition:opacity .4s; }
+  .hidden { display:none !important; }
+  /* dev/comparison scaffolding — hidden in the prop build (liquify chosen) */
+  body:not(.dev) .dev-only { display:none !important; }
+  #hint { position:absolute; bottom:64px; left:0; right:0; text-align:center; font-size:10px;
+      color:#666; z-index:54; pointer-events:none; }
+
+  /* hidden file input for "load your own photo" */
+  #filewrap { position:absolute; opacity:0; width:1px; height:1px; overflow:hidden; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- fake 2015 status bar -->
+  <div id="statusbar">
+    <div id="sb-left"><span class="sb-dots">●●●○○</span><span>Carrier</span></div>
+    <div id="sb-time">11:11</div>
+    <div id="sb-right"><span>100%</span><span class="sb-batt"><i></i></span></div>
+  </div>
+
+  <!-- ===== GALLERY ===== -->
+  <section id="gallery" class="screen active">
+    <div class="navbar"><div class="row"><span class="title">Camera Roll</span>
+      <span class="sub">Moments</span></div></div>
+    <div id="grid"></div>
+    <div class="tabbar">
+      <div class="tab on"><span class="ic">◱</span>Photos</div>
+      <div class="tab"><span class="ic">☰</span>Shared</div>
+      <div class="tab"><span class="ic">▤</span>Albums</div>
+    </div>
+  </section>
+
+  <!-- ===== PHOTO VIEW ===== -->
+  <section id="photoview" class="screen">
+    <div class="pv-nav"><div class="row">
+      <div class="back" id="pv-back"><span style="font-size:26px;line-height:1;margin-top:-2px">‹</span>Camera Roll</div>
+      <div class="title">Today<span>11:10 AM</span></div>
+    </div></div>
+    <div id="pv-stage"><canvas id="pvCanvas"></canvas></div>
+    <div class="pv-tools">
+      <div class="t">⤴</div>
+      <div class="edit" id="pv-edit">Edit</div>
+      <div class="t">🗑</div>
+    </div>
+  </section>
+
+  <!-- ===== EDITOR / WARP LAB ===== -->
+  <section id="editor" class="screen">
+    <div id="ed-top">
+      <div class="x" id="ed-cancel">✕</div>
+      <div class="ttl">Reshape</div>
+      <div class="ok" id="ed-save">✓</div>
+    </div>
+    <div id="ed-stage">
+      <canvas id="warpCanvas"></canvas>
+      <canvas id="glCanvas"></canvas>
+      <div id="ed-badge" class="dev-only">—</div>
+      <div id="ed-orig-flag">ORIGINAL</div>
+    </div>
+    <div id="ring"></div>
+    <div id="toast">Drag on the body to reshape her waist &amp; legs. Use <b>Enlarge</b> for the chest. Hold <b>Original</b> to flip before / after.</div>
+
+    <div id="tech" class="dev-only">
+      <button id="tech-mesh">Mesh · 2D</button>
+      <button id="tech-gl" class="on">Liquify · GL</button>
+    </div>
+
+    <div id="ed-tools">
+      <div class="tool on" data-tool="push"><span class="ic">↔</span>Reshape</div>
+      <div class="tool" data-tool="slim"><span class="ic">)(</span>Slim</div>
+      <div class="tool" data-tool="grow"><span class="ic">◎</span>Enlarge</div>
+      <div class="tool" data-tool="restore"><span class="ic">↺</span>Restore</div>
+    </div>
+
+    <div id="ed-bottom">
+      <span class="lbl">Size</span>
+      <input id="brush" type="range" min="40" max="240" value="120">
+      <button id="reset">Reset</button>
+      <button id="compare">Original</button>
+    </div>
+  </section>
+</div>
+
+<div id="filewrap"><input id="fileinput" type="file" accept="image/*"></div>
+
+<script>
+"use strict";
+/* Set DEV=true to bring back the Mesh-vs-Liquify A/B switch + perf badge.
+   Liquify (WebGL) was chosen as the engine, so the prop build hides them. */
+const DEV = false;
+if (DEV) document.body.classList.add('dev');
+/* ============================================================================
+   Sc9 Phone UI — WARP LAB v01
+   Self-contained, offline. Two renderers over ONE liquify model so the
+   Mesh(2D) vs Liquify(WebGL) comparison is honest (same gesture, same math).
+   Built for iPhone 6 (375x667pt @2x). Placeholder figure drawn procedurally.
+============================================================================ */
+
+/* ---------- keep screen awake ---------- */
+(async function keepAwake(){
+  try { if ('wakeLock' in navigator){ let wl=await navigator.wakeLock.request('screen');
+    document.addEventListener('visibilitychange',async()=>{ if(document.visibilityState==='visible'){ try{wl=await navigator.wakeLock.request('screen');}catch(e){} } }); } } catch(e){}
+})();
+/* block double-tap zoom / gesture zoom on old Safari */
+document.addEventListener('gesturestart',e=>e.preventDefault());
+let _lastTouch=0;
+document.addEventListener('touchend',e=>{ const n=Date.now(); if(n-_lastTouch<=300) e.preventDefault(); _lastTouch=n; },{passive:false});
+
+/* ---------- live clock on the fake bar? NO — locked for continuity ---------- */
+/* time stays 11:11 on purpose (period, un-modern, continuity-safe) */
+
+/* ============================================================================
+   1) PLACEHOLDER "GROUP SELFIE" — procedural lit figure (a silhouette-ish
+      body with soft shading so waist / chest / legs are clearly warpable).
+      Rendered once at 2x into an offscreen canvas we treat as the photo.
+============================================================================ */
+const IMG_W = 720, IMG_H = 1000;           // portrait, 0.72 aspect
+const photo = document.createElement('canvas');
+photo.width = IMG_W; photo.height = IMG_H;
+function drawPlaceholder(ctx){
+  const w=IMG_W,h=IMG_H;
+  // backdrop — soft studio gradient (reads like a lit portrait / silhouette set)
+  let bg=ctx.createLinearGradient(0,0,0,h);
+  bg.addColorStop(0,'#2b3550'); bg.addColorStop(.55,'#141a2b'); bg.addColorStop(1,'#0a0d17');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,w,h);
+  // rim glow behind figure
+  let g=ctx.createRadialGradient(w*0.5,h*0.42,40,w*0.5,h*0.5,h*0.6);
+  g.addColorStop(0,'rgba(120,150,220,0.35)'); g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+
+  const cx=w*0.5;
+  // ---- body path (front-facing standing figure) ----
+  // Landmarks tuned so waist ~0.52h, chest ~0.40h, legs 0.62h->0.96h
+  function bodyPath(){
+    const p=new Path2D();
+    // head
+    p.moveTo(cx-52,h*0.12);
+    p.bezierCurveTo(cx-52,h*0.06, cx+52,h*0.06, cx+52,h*0.12);
+    p.bezierCurveTo(cx+52,h*0.175, cx+34,h*0.205, cx+30,h*0.215);
+    // neck to shoulders
+    p.lineTo(cx+22,h*0.235);
+    p.bezierCurveTo(cx+70,h*0.25, cx+120,h*0.28, cx+126,h*0.34);   // r shoulder/arm out
+    // right side: chest -> waist -> hip
+    p.bezierCurveTo(cx+120,h*0.40, cx+112,h*0.40, cx+96,h*0.46);   // chest
+    p.bezierCurveTo(cx+70,h*0.50, cx+66,h*0.52, cx+70,h*0.545);    // waist (in)
+    p.bezierCurveTo(cx+112,h*0.575, cx+120,h*0.60, cx+112,h*0.635);// hip (out)
+    // right leg
+    p.bezierCurveTo(cx+104,h*0.72, cx+92,h*0.80, cx+82,h*0.885);
+    p.bezierCurveTo(cx+80,h*0.93, cx+82,h*0.955, cx+70,h*0.965);
+    p.lineTo(cx+30,h*0.965);
+    p.bezierCurveTo(cx+30,h*0.90, cx+36,h*0.78, cx+30,h*0.66);     // inner right leg
+    p.lineTo(cx-30,h*0.66);                                        // crotch
+    p.bezierCurveTo(cx-36,h*0.78, cx-30,h*0.90, cx-30,h*0.965);    // inner left leg
+    p.lineTo(cx-70,h*0.965);
+    p.bezierCurveTo(cx-82,h*0.955, cx-80,h*0.93, cx-82,h*0.885);
+    p.bezierCurveTo(cx-92,h*0.80, cx-104,h*0.72, cx-112,h*0.635);  // left leg
+    // left side up: hip -> waist -> chest
+    p.bezierCurveTo(cx-120,h*0.60, cx-112,h*0.575, cx-70,h*0.545); // hip
+    p.bezierCurveTo(cx-66,h*0.52, cx-70,h*0.50, cx-96,h*0.46);     // waist
+    p.bezierCurveTo(cx-112,h*0.40, cx-120,h*0.40, cx-126,h*0.34);  // chest
+    p.bezierCurveTo(cx-120,h*0.28, cx-70,h*0.25, cx-22,h*0.235);   // l shoulder
+    p.lineTo(cx-30,h*0.215);
+    p.bezierCurveTo(cx-34,h*0.205, cx-52,h*0.175, cx-52,h*0.12);
+    p.closePath();
+    return p;
+  }
+  const body=bodyPath();
+  // fill with a soft front-lit gradient
+  let sk=ctx.createLinearGradient(cx-130,0,cx+130,0);
+  sk.addColorStop(0,'#39496a'); sk.addColorStop(.5,'#8ea0c8'); sk.addColorStop(1,'#39496a');
+  ctx.save(); ctx.fill(body); ctx.clip(body);
+  ctx.fillStyle=sk; ctx.fillRect(0,0,w,h);
+  // center highlight (form)
+  let hl=ctx.createRadialGradient(cx,h*0.45,10,cx,h*0.5,260);
+  hl.addColorStop(0,'rgba(220,230,255,0.55)'); hl.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=hl; ctx.fillRect(0,0,w,h);
+  // subtle contour shadows
+  ctx.strokeStyle='rgba(10,15,30,0.25)'; ctx.lineWidth=18; ctx.stroke(body);
+  ctx.restore();
+  // crisp rim light on edge
+  ctx.save(); ctx.strokeStyle='rgba(150,180,255,0.5)'; ctx.lineWidth=2.5; ctx.stroke(body); ctx.restore();
+
+  // faint measuring grid ON the figure so warp is readable in close-up (toggleable)
+  window._gridPath=body;
+}
+drawPlaceholder(photo.getContext('2d'));
+
+// working copy of the current source image (placeholder OR user photo)
+let srcCanvas = photo;
+let srcReady = true;
+
+/* optional grid overlay baked as separate layer for readability */
+const gridLayer=document.createElement('canvas'); gridLayer.width=IMG_W; gridLayer.height=IMG_H;
+(function bakeGrid(){
+  const g=gridLayer.getContext('2d'); g.clearRect(0,0,IMG_W,IMG_H);
+  g.strokeStyle='rgba(255,255,255,0.10)'; g.lineWidth=1;
+  for(let x=0;x<=IMG_W;x+=IMG_W/12){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,IMG_H); g.stroke(); }
+  for(let y=0;y<=IMG_H;y+=IMG_H/16){ g.beginPath(); g.moveTo(0,y); g.lineTo(IMG_W,y); g.stroke(); }
+})();
+let showGrid=false;
+
+/* ============================================================================
+   2) GALLERY — period filler thumbnails + the group selfie tile
+============================================================================ */
+const grid=document.getElementById('grid');
+function fillerThumb(seed){
+  const c=document.createElement('canvas'); c.width=c.height=150; const x=c.getContext('2d');
+  const rnd=(n=>()=>((n=(n*9301+49297)%233280)/233280))(seed*7+3);
+  const pals=[['#f4a3b0','#f7d9c4'],['#a3c9f4','#c4f7e9'],['#c9b0f4','#f4e7a3'],
+    ['#b8e6c0','#e6f0b8'],['#f4c4a3','#f4a3c9'],['#9fb2d6','#d6cf9f'],['#e0e0e6','#c8ccd6']];
+  const p=pals[Math.floor(rnd()*pals.length)];
+  const gg=x.createLinearGradient(0,0,150,150); gg.addColorStop(0,p[0]); gg.addColorStop(1,p[1]);
+  x.fillStyle=gg; x.fillRect(0,0,150,150);
+  // vague "content": a face blob, a screenshot bar, or a meme block
+  const kind=Math.floor(rnd()*3);
+  if(kind===0){ x.fillStyle='rgba(255,255,255,.45)'; x.beginPath(); x.arc(75,64,34,0,7); x.fill();
+    x.fillRect(38,104,74,46); }
+  else if(kind===1){ x.fillStyle='rgba(255,255,255,.8)'; x.fillRect(0,0,150,26);
+    x.fillStyle='rgba(0,0,0,.15)'; for(let i=0;i<5;i++) x.fillRect(12,42+i*20,110-rnd()*60,8); }
+  else { x.fillStyle='rgba(0,0,0,.12)'; x.fillRect(0,110,150,40);
+    x.fillStyle='rgba(255,255,255,.9)'; x.fillRect(20,120,110,7); x.fillRect(30,132,90,7); }
+  return c;
+}
+function buildGallery(){
+  grid.innerHTML='';
+  const label=document.createElement('div'); label.className='rowlabel';
+  label.innerHTML='Today<span>Silhouette · 24 photos</span>'; grid.appendChild(label);
+  const wrap=document.createElement('div'); wrap.className='thumbs';
+  // group selfie tile FIRST (top-left, easy to find on camera)
+  const heroTile=document.createElement('div'); heroTile.className='thumb sel';
+  const hc=document.createElement('canvas'); hc.width=150; hc.height=150;
+  // center-crop the portrait into the square thumb
+  const hx=hc.getContext('2d'); const s=Math.min(IMG_W,IMG_H);
+  hx.drawImage(srcCanvas,(IMG_W-s)/2,(IMG_H-s)/2*0.4,s,s,0,0,150,150);
+  heroTile.appendChild(hc);
+  heroTile.addEventListener('click',openPhoto); wrap.appendChild(heroTile);
+  for(let i=0;i<23;i++){ const t=document.createElement('div'); t.className='thumb';
+    t.appendChild(fillerThumb(i+1)); t.addEventListener('click',openPhoto); wrap.appendChild(t); }
+  grid.appendChild(wrap);
+}
+
+/* ============================================================================
+   3) SCREEN ROUTING
+============================================================================ */
+const screens={gallery:document.getElementById('gallery'),
+               photoview:document.getElementById('photoview'),
+               editor:document.getElementById('editor')};
+const statusbar=document.getElementById('statusbar');
+function show(name){
+  for(const k in screens) screens[k].classList.toggle('active',k===name);
+  // status bar text color: dark on white screens, light on the black editor
+  statusbar.classList.toggle('dark', name!=='editor');
+  if(name==='editor'){ requestAnimationFrame(()=>{ layoutEditor(); renderWarp(); }); }
+  if(name==='photoview'){ requestAnimationFrame(drawPhotoView); }
+}
+// clicking the hero selfie opens the full-screen photo, others too (all show the hero for the test)
+function openPhoto(){ show('photoview'); }
+document.getElementById('pv-back').addEventListener('click',()=>show('gallery'));
+document.getElementById('pv-edit').addEventListener('click',()=>{ resetWarp(); show('editor'); });
+document.getElementById('ed-cancel').addEventListener('click',()=>show('photoview'));
+document.getElementById('ed-save').addEventListener('click',()=>{
+  // bake current warp back into the "photo" so the gallery/full-view reflect it
+  bakeEditToSource(); buildGallery(); show('photoview');
+});
+
+const pvCanvas=document.getElementById('pvCanvas');
+function drawPhotoView(){
+  const stage=document.getElementById('pv-stage');
+  const availW=stage.clientWidth, availH=stage.clientHeight;
+  const scale=Math.min(availW/IMG_W, availH/IMG_H);
+  pvCanvas.width=IMG_W; pvCanvas.height=IMG_H;
+  pvCanvas.style.width=(IMG_W*scale)+'px'; pvCanvas.style.height=(IMG_H*scale)+'px';
+  pvCanvas.getContext('2d').drawImage(srcCanvas,0,0);
+}
+
+/* ============================================================================
+   4) THE WARP ENGINE  (shared model + two renderers)
+   Model: a GRID of control points. Each stroke displaces points inside the
+   brush with a smooth falloff. Same displaced grid feeds BOTH renderers:
+     - MESH(2D): coarse grid, per-triangle affine drawImage on canvas 2D.
+     - LIQUIFY(GL): fine grid, textured triangles, GPU bilinear -> smooth.
+============================================================================ */
+// two grid resolutions to make the tradeoff real & visible
+const MESH_COLS=14, MESH_ROWS=20;     // canvas2d (coarser, faster on A8)
+const GL_COLS=40,  GL_ROWS=56;        // webgl (fine, cheap on GPU)
+
+function makeGrid(cols,rows){
+  const g={cols,rows,ox:new Float32Array((cols+1)*(rows+1)),oy:new Float32Array((cols+1)*(rows+1)),
+           x:new Float32Array((cols+1)*(rows+1)),y:new Float32Array((cols+1)*(rows+1))};
+  let i=0;
+  for(let r=0;r<=rows;r++) for(let c=0;c<=cols;c++){
+    const px=c/cols*IMG_W, py=r/rows*IMG_H;
+    g.ox[i]=px; g.oy[i]=py; g.x[i]=px; g.y[i]=py; i++;
+  }
+  return g;
+}
+let meshGrid=makeGrid(MESH_COLS,MESH_ROWS);
+let glGrid=makeGrid(GL_COLS,GL_ROWS);
+function resetWarp(){ meshGrid=makeGrid(MESH_COLS,MESH_ROWS); glGrid=makeGrid(GL_COLS,GL_ROWS);
+  if(gl) uploadGLBuffers(); renderWarp(); }
+
+// apply a displacement to a grid (forward warp with smooth falloff)
+function applyStroke(g, cx,cy, dx,dy, radius, tool){
+  const r2=radius*radius;
+  const n=g.x.length;
+  for(let i=0;i<n;i++){
+    // measure from ORIGINAL position so repeated strokes accumulate smoothly
+    const gx=g.x[i], gy=g.y[i];
+    const ddx=gx-cx, ddy=gy-cy; const d2=ddx*ddx+ddy*ddy;
+    if(d2>r2) continue;
+    const d=Math.sqrt(d2); const t=1-d/radius; const fall=t*t*(3-2*t); // smoothstep
+    if(tool==='push'||tool==='slim'){
+      let mx=dx, my=dy;
+      if(tool==='slim'){ // squeeze toward stroke line perpendicular-ish: pull inward horizontally
+        mx = (cx-gx)*0.25; my = dy*0.4;
+      }
+      g.x[i]=gx+mx*fall; g.y[i]=gy+my*fall;
+    } else if(tool==='grow'){ // bulge outward from center (chest expand)
+      const push=fall*radius*0.18;
+      const len=d||1; g.x[i]=gx+(ddx/len)*push; g.y[i]=gy+(ddy/len)*push;
+    } else if(tool==='restore'){ // ease back toward original
+      g.x[i]=gx+(g.ox[i]-gx)*fall*0.5; g.y[i]=gy+(g.oy[i]-gy)*fall*0.5;
+    }
+  }
+}
+
+/* ---------- MESH renderer (Canvas 2D, per-triangle affine) ---------- */
+const warpCanvas=document.getElementById('warpCanvas');
+const wctx=warpCanvas.getContext('2d');
+function drawTri(ctx,img,x0,y0,x1,y1,x2,y2,u0,v0,u1,v1,u2,v2){
+  ctx.save();
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.lineTo(x2,y2); ctx.closePath();
+  ctx.clip();
+  // affine map from (u,v) source -> (x,y) dest
+  const denom=(u1-u0)*(v2-v0)-(u2-u0)*(v1-v0);
+  if(denom===0){ ctx.restore(); return; }
+  const a=((x1-x0)*(v2-v0)-(x2-x0)*(v1-v0))/denom;
+  const b=((y1-y0)*(v2-v0)-(y2-y0)*(v1-v0))/denom;
+  const c=((x2-x0)*(u1-u0)-(x1-x0)*(u2-u0))/denom;
+  const d=((y2-y0)*(u1-u0)-(y1-y0)*(u2-u0))/denom;
+  const e=x0-a*u0-c*v0; const f=y0-b*u0-d*v0;
+  ctx.transform(a,b,c,d,e,f);
+  ctx.drawImage(img,0,0);
+  ctx.restore();
+}
+function renderMesh(dispW,dispH){
+  const g=meshGrid; const sx=dispW/IMG_W, sy=dispH/IMG_H;
+  warpCanvas.width=dispW; warpCanvas.height=dispH; warpCanvas.style.display='block';
+  document.getElementById('glCanvas').style.display='none';
+  wctx.clearRect(0,0,dispW,dispH); wctx.fillStyle='#000'; wctx.fillRect(0,0,dispW,dispH);
+  const cols=g.cols,rows=g.rows; const idx=(c,r)=>r*(cols+1)+c;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    const i00=idx(c,r),i10=idx(c+1,r),i01=idx(c,r+1),i11=idx(c+1,r+1);
+    const X=k=>g.x[k]*sx, Y=k=>g.y[k]*sy, U=k=>g.ox[k], V=k=>g.oy[k];
+    drawTri(wctx,srcCanvas, X(i00),Y(i00),X(i10),Y(i10),X(i11),Y(i11), U(i00),V(i00),U(i10),V(i10),U(i11),V(i11));
+    drawTri(wctx,srcCanvas, X(i00),Y(i00),X(i11),Y(i11),X(i01),Y(i01), U(i00),V(i00),U(i11),V(i11),U(i01),V(i01));
+  }
+  if(showGrid) wctx.drawImage(gridLayer,0,0,dispW,dispH);
+}
+
+/* ---------- LIQUIFY renderer (WebGL, textured triangles) ---------- */
+const glCanvas=document.getElementById('glCanvas');
+let gl=null, glProg=null, glTex=null, glPosBuf=null, glUVBuf=null, glIndexBuf=null, glIndexCount=0, glTexDirty=true;
+function initGL(){
+  gl=glCanvas.getContext('webgl',{premultipliedAlpha:false,antialias:true})||glCanvas.getContext('experimental-webgl');
+  if(!gl) return false;
+  const vs=`attribute vec2 aPos; attribute vec2 aUV; uniform vec2 uRes; varying vec2 vUV;
+    void main(){ vec2 p=(aPos/uRes)*2.0-1.0; gl_Position=vec4(p.x,-p.y,0.0,1.0); vUV=aUV; }`;
+  const fs=`precision mediump float; varying vec2 vUV; uniform sampler2D uTex; uniform vec2 uImg;
+    void main(){ gl_FragColor=texture2D(uTex, vUV/uImg); }`;
+  const mk=(t,s)=>{const sh=gl.createShader(t);gl.shaderSource(sh,s);gl.compileShader(sh);return sh;};
+  glProg=gl.createProgram(); gl.attachShader(glProg,mk(gl.VERTEX_SHADER,vs));
+  gl.attachShader(glProg,mk(gl.FRAGMENT_SHADER,fs)); gl.linkProgram(glProg); gl.useProgram(glProg);
+  glTex=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,glTex);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  glPosBuf=gl.createBuffer(); glUVBuf=gl.createBuffer(); glIndexBuf=gl.createBuffer();
+  // static index + UV (UVs never change)
+  const g=glGrid, cols=g.cols, rows=g.rows;
+  const uv=new Float32Array(g.ox.length*2); for(let i=0;i<g.ox.length;i++){ uv[i*2]=g.ox[i]; uv[i*2+1]=g.oy[i]; }
+  gl.bindBuffer(gl.ARRAY_BUFFER,glUVBuf); gl.bufferData(gl.ARRAY_BUFFER,uv,gl.STATIC_DRAW);
+  const idx=[]; const at=(c,r)=>r*(cols+1)+c;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){ const a=at(c,r),b=at(c+1,r),d=at(c,r+1),e=at(c+1,r+1);
+    idx.push(a,b,e,a,e,d); }
+  glIndexCount=idx.length;
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,glIndexBuf);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(idx),gl.STATIC_DRAW);
+  return true;
+}
+function uploadGLBuffers(){
+  if(!gl) return;
+  const g=glGrid; const pos=new Float32Array(g.x.length*2);
+  for(let i=0;i<g.x.length;i++){ pos[i*2]=g.x[i]; pos[i*2+1]=g.y[i]; }
+  gl.bindBuffer(gl.ARRAY_BUFFER,glPosBuf); gl.bufferData(gl.ARRAY_BUFFER,pos,gl.DYNAMIC_DRAW);
+}
+function renderGL(dispW,dispH){
+  if(!gl && !initGL()){ renderMesh(dispW,dispH); return; }
+  if(glTexDirty){ gl.bindTexture(gl.TEXTURE_2D,glTex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,srcCanvas); glTexDirty=false; }
+  glCanvas.width=dispW; glCanvas.height=dispH; glCanvas.style.display='block';
+  warpCanvas.style.display='none';
+  gl.viewport(0,0,dispW,dispH); gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.useProgram(glProg);
+  uploadGLBuffers();
+  const aPos=gl.getAttribLocation(glProg,'aPos'), aUV=gl.getAttribLocation(glProg,'aUV');
+  gl.bindBuffer(gl.ARRAY_BUFFER,glPosBuf); gl.enableVertexAttribArray(aPos); gl.vertexAttribPointer(aPos,2,gl.FLOAT,false,0,0);
+  gl.bindBuffer(gl.ARRAY_BUFFER,glUVBuf); gl.enableVertexAttribArray(aUV); gl.vertexAttribPointer(aUV,2,gl.FLOAT,false,0,0);
+  gl.uniform2f(gl.getUniformLocation(glProg,'uRes'),IMG_W,IMG_H);
+  gl.uniform2f(gl.getUniformLocation(glProg,'uImg'),IMG_W,IMG_H);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,glIndexBuf);
+  gl.drawElements(gl.TRIANGLES,glIndexCount,gl.UNSIGNED_SHORT,0);
+}
+
+/* ---------- dispatch + layout + FPS ---------- */
+let technique='gl';                 // 'mesh' | 'gl' — liquify chosen as the engine
+let dispW=0, dispH=0, scaleToImg=1; // stage->image scale
+let peekOriginal=false;
+function layoutEditor(){
+  const stage=document.getElementById('ed-stage');
+  const availW=stage.clientWidth, availH=stage.clientHeight;
+  const scale=Math.min(availW/IMG_W, availH/IMG_H);
+  dispW=Math.round(IMG_W*scale); dispH=Math.round(IMG_H*scale); scaleToImg=IMG_W/dispW;
+  [warpCanvas,glCanvas].forEach(c=>{ c.style.width=dispW+'px'; c.style.height=dispH+'px'; });
+}
+let fpsT=performance.now(), fpsN=0, fpsVal=0, lastMs=0;
+function renderWarp(){
+  if(!dispW) layoutEditor();
+  const t0=performance.now();
+  if(peekOriginal){ // show clean original through whichever canvas is up
+    warpCanvas.width=dispW; warpCanvas.height=dispH; warpCanvas.style.display='block';
+    glCanvas.style.display='none';
+    wctx.clearRect(0,0,dispW,dispH); wctx.drawImage(srcCanvas,0,0,dispW,dispH);
+    if(showGrid) wctx.drawImage(gridLayer,0,0,dispW,dispH);
+  } else if(technique==='gl'){ renderGL(dispW,dispH); } else { renderMesh(dispW,dispH); }
+  lastMs = lastMs*0.6 + (performance.now()-t0)*0.4;  // smoothed per-frame cost
+  updateBadge();
+}
+function updateBadge(){
+  const b=document.getElementById('ed-badge');
+  const g = technique==='gl'?glGrid:meshGrid;
+  const tris = g.cols*g.rows*2;
+  b.innerHTML = (technique==='gl'?'LIQUIFY · WebGL':'MESH · Canvas2D')
+    + '<br>'+ g.cols+'×'+g.rows+' grid · '+tris+' tris'
+    + '<br>'+ lastMs.toFixed(1)+' ms/frame'+(fpsVal?' · '+fpsVal.toFixed(0)+' fps':'');
+}
+// rolling FPS during interaction
+function tickFPS(){ fpsN++; const now=performance.now();
+  if(now-fpsT>=500){ fpsVal=fpsN*1000/(now-fpsT); fpsN=0; fpsT=now; } }
+
+/* ============================================================================
+   5) GESTURES on the editor stage
+============================================================================ */
+const stageEl=document.getElementById('ed-stage');
+const ring=document.getElementById('ring');
+let drawing=false, lastX=0,lastY=0, brushR=120, curTool='push';
+function stageToImg(clientX,clientY){
+  const rc=(technique==='gl'?glCanvas:warpCanvas).getBoundingClientRect();
+  return { x:(clientX-rc.left)*scaleToImg, y:(clientY-rc.top)*scaleToImg,
+           inside: clientX>=rc.left&&clientX<=rc.right&&clientY>=rc.top&&clientY<=rc.bottom, rc };
+}
+function pointerDown(cx,cy){
+  const p=stageToImg(cx,cy); if(!p.inside) return; drawing=true; lastX=p.x; lastY=p.y;
+  showRing(cx,cy);
+  if(curTool==='grow'){ // enlarge acts on press (bloat under finger)
+    const g=technique==='gl'?glGrid:meshGrid; applyStroke(g,p.x,p.y,0,0,brushR*scaleToImg,'grow'); renderWarp(); }
+}
+function pointerMove(cx,cy){
+  showRing(cx,cy);
+  if(!drawing) return;
+  const p=stageToImg(cx,cy);
+  const g=technique==='gl'?glGrid:meshGrid;
+  const dx=p.x-lastX, dy=p.y-lastY;
+  if(curTool==='grow'){ applyStroke(g,p.x,p.y,0,0,brushR*scaleToImg,'grow'); }
+  else { applyStroke(g,p.x,p.y,dx,dy,brushR*scaleToImg,curTool); }
+  lastX=p.x; lastY=p.y; renderWarp(); tickFPS();
+}
+function pointerUp(){ drawing=false; ring.style.display='none'; }
+function showRing(cx,cy){ ring.style.display='block'; ring.style.left=cx+'px'; ring.style.top=cy+'px';
+  ring.style.width=ring.style.height=(brushR*2)+'px'; }
+
+// touch
+stageEl.addEventListener('touchstart',e=>{ e.preventDefault(); const t=e.touches[0]; pointerDown(t.clientX,t.clientY); },{passive:false});
+stageEl.addEventListener('touchmove', e=>{ e.preventDefault(); const t=e.touches[0]; pointerMove(t.clientX,t.clientY); },{passive:false});
+stageEl.addEventListener('touchend', e=>{ e.preventDefault(); pointerUp(); },{passive:false});
+// mouse (desktop preview)
+stageEl.addEventListener('mousedown',e=>pointerDown(e.clientX,e.clientY));
+window.addEventListener('mousemove',e=>{ if(screens.editor.classList.contains('active')) pointerMove(e.clientX,e.clientY); });
+window.addEventListener('mouseup',pointerUp);
+
+/* ============================================================================
+   6) CONTROLS
+============================================================================ */
+// technique A/B
+const tMesh=document.getElementById('tech-mesh'), tGL=document.getElementById('tech-gl');
+function setTech(t){ technique=t; tMesh.classList.toggle('on',t==='mesh'); tGL.classList.toggle('on',t==='gl');
+  glTexDirty=true; renderWarp(); }
+tMesh.addEventListener('click',()=>setTech('mesh'));
+tGL.addEventListener('click',()=>setTech('gl'));
+// tools
+document.querySelectorAll('.tool').forEach(el=>el.addEventListener('click',()=>{
+  document.querySelectorAll('.tool').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on'); curTool=el.dataset.tool;
+}));
+// brush size
+document.getElementById('brush').addEventListener('input',e=>{ brushR=+e.target.value/2; });
+brushR=120/2;
+// reset
+document.getElementById('reset').addEventListener('click',()=>{ resetWarp(); });
+// before/after: press-and-hold peek + it's also the "compare back and forth" beat
+const cmp=document.getElementById('compare'); const oflag=document.getElementById('ed-orig-flag');
+function peekOn(){ peekOriginal=true; cmp.classList.add('holding'); oflag.style.opacity='1'; renderWarp(); }
+function peekOff(){ peekOriginal=false; cmp.classList.remove('holding'); oflag.style.opacity='0'; renderWarp(); }
+cmp.addEventListener('touchstart',e=>{e.preventDefault();peekOn();},{passive:false});
+cmp.addEventListener('touchend',e=>{e.preventDefault();peekOff();},{passive:false});
+cmp.addEventListener('mousedown',peekOn); cmp.addEventListener('mouseup',peekOff);
+cmp.addEventListener('mouseleave',()=>{ if(peekOriginal) peekOff(); });
+
+/* bake current edit into the source image so it persists to gallery/full view */
+function bakeEditToSource(){
+  const out=document.createElement('canvas'); out.width=IMG_W; out.height=IMG_H;
+  // re-render current technique at full image resolution into 'out'
+  const savedDW=dispW, savedDH=dispH;
+  dispW=IMG_W; dispH=IMG_H;
+  if(technique==='gl' && (gl||initGL())){ renderGL(IMG_W,IMG_H); out.getContext('2d').drawImage(glCanvas,0,0); }
+  else { renderMesh(IMG_W,IMG_H); out.getContext('2d').drawImage(warpCanvas,0,0); }
+  dispW=savedDW; dispH=savedDH;
+  srcCanvas=out; glTexDirty=true;
+  // reset grids to identity on the NEW baked source (so further edits start clean)
+  meshGrid=makeGrid(MESH_COLS,MESH_ROWS); glGrid=makeGrid(GL_COLS,GL_ROWS);
+  layoutEditor();
+}
+
+/* ---------- load your own photo (for real-still fidelity testing) ---------- */
+/* triple-tap the editor title to open the file picker */
+let titleTaps=0,titleT=0;
+document.querySelector('#ed-top .ttl').addEventListener('click',()=>{
+  const n=Date.now(); if(n-titleT<500) titleTaps++; else titleTaps=1; titleT=n;
+  if(titleTaps>=3){ titleTaps=0; document.getElementById('fileinput').click(); }
+});
+document.getElementById('fileinput').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return; const url=URL.createObjectURL(f); const im=new Image();
+  im.onload=()=>{ const c=document.createElement('canvas'); c.width=IMG_W; c.height=IMG_H;
+    const cc=c.getContext('2d'); cc.fillStyle='#000'; cc.fillRect(0,0,IMG_W,IMG_H);
+    // cover-fit
+    const s=Math.max(IMG_W/im.width,IMG_H/im.height); const dw=im.width*s,dh=im.height*s;
+    cc.drawImage(im,(IMG_W-dw)/2,(IMG_H-dh)/2,dw,dh);
+    srcCanvas=c; glTexDirty=true; resetWarp(); buildGallery(); drawPhotoView(); URL.revokeObjectURL(url); };
+  im.src=url;
+});
+
+/* ---------- dismiss the toast after first interaction ---------- */
+let toastGone=false;
+function killToast(){ if(toastGone)return; toastGone=true; const t=document.getElementById('toast');
+  t.style.opacity='0'; setTimeout(()=>t.classList.add('hidden'),500); }
+stageEl.addEventListener('touchstart',killToast,{once:true});
+stageEl.addEventListener('mousedown',killToast,{once:true});
+
+/* ---------- boot ---------- */
+buildGallery();
+show('gallery');
+window.addEventListener('resize',()=>{ if(screens.editor.classList.contains('active')){ layoutEditor(); renderWarp(); }
+  if(screens.photoview.classList.contains('active')) drawPhotoView(); });
+</script>
+</body>
+</html>
