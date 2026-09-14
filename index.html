@@ -91,73 +91,78 @@
   #photoview .pv-tools .t { width:40px; text-align:center; font-size:20px; }
   #photoview .pv-tools .edit { font-size:16px; padding:0 12px; font-weight:400; }
 
-  /* ---- EDITOR / WARP LAB ---- */
-  #editor { background:#000; color:#fff; }
+  /* ---- EDITOR — 2015 Facetune-style ("Preen", fictional) ---- */
+  #editor { background:#c9ccce; color:#3a3a3a; }
   #ed-top { position:absolute; top:20px; left:0; right:0; height:44px; z-index:60;
-      display:flex; align-items:center; justify-content:space-between; padding:0 6px;
-      background:#0c0c0c; border-bottom:.5px solid #262626; }
-  #ed-top .x, #ed-top .ok { font-size:22px; width:40px; text-align:center; }
-  #ed-top .ok { color:#3af0c0; }
-  #ed-top .ttl { font-size:13px; color:#9a9a9a; }
-  #ed-stage { position:absolute; top:64px; bottom:150px; left:0; right:0; background:#000;
+      display:flex; align-items:center; justify-content:space-between; padding:0 8px;
+      background:#f4f5f6; border-bottom:.5px solid #b9bcc0; }
+  #ed-top .x, #ed-top .ok { font-size:20px; width:44px; text-align:center; color:#6a6f76; }
+  #ed-top .wordmark { font-family:"Arial Rounded MT Bold","Helvetica Neue",Arial,sans-serif;
+      font-weight:800; font-style:italic; font-size:23px; letter-spacing:-.5px; line-height:1;
+      background:linear-gradient(90deg,#ff5b7f 0%,#ff7a59 48%,#22b3c9 100%);
+      -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  #ed-top .wordmark .spark { -webkit-text-fill-color:#ffb02e; font-size:12px; vertical-align:top; margin-left:1px; }
+  #ed-stage { position:absolute; top:64px; bottom:120px; left:0; right:0; background:#c9ccce;
       overflow:hidden; }
   #warpCanvas, #glCanvas { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-      touch-action:none; }
+      touch-action:none; box-shadow:0 1px 6px rgba(0,0,0,.25); }
   #glCanvas { display:none; }
   #ed-badge { position:absolute; top:6px; left:6px; z-index:40; font-size:10px; line-height:1.4;
-      color:#8affea; background:rgba(0,0,0,.45); padding:3px 6px; border-radius:4px;
+      color:#0b8f77; background:rgba(255,255,255,.72); padding:3px 6px; border-radius:4px;
       font-variant-numeric:tabular-nums; pointer-events:none; }
-  #ed-orig-flag { position:absolute; top:6px; right:6px; z-index:40; font-size:10px;
-      color:#fff; background:rgba(255,60,60,.85); padding:3px 7px; border-radius:4px;
-      opacity:0; transition:opacity .08s; pointer-events:none; letter-spacing:.5px; }
+  #ed-orig-flag { position:absolute; top:8px; left:50%; transform:translateX(-50%); z-index:40;
+      font-size:10px; color:#fff; background:rgba(255,60,60,.9); padding:3px 9px; border-radius:10px;
+      opacity:0; transition:opacity .08s; pointer-events:none; letter-spacing:1px; font-weight:600; }
 
-  /* A/B technique switch */
-  #ab-switch { position:absolute; bottom:150px; left:0; right:0; height:0; }
-  #tech { position:absolute; bottom:106px; left:50%; transform:translateX(-50%); z-index:55;
-      display:flex; background:#161616; border:1px solid #333; border-radius:8px; overflow:hidden; }
-  #tech button { background:none; border:none; color:#8a8a8a; font-size:12px; font-weight:600;
+  /* canvas corner controls (undo / compare) — Facetune places these over the photo */
+  .canvas-btn { position:absolute; z-index:48; width:44px; height:44px; border-radius:50%;
+      border:none; display:flex; align-items:center; justify-content:center; font-size:20px;
+      color:#fff; box-shadow:0 1px 4px rgba(0,0,0,.35); font-family:inherit; }
+  .canvas-btn.undo { left:12px; bottom:12px; background:#ff5b6a; }
+  .canvas-btn.compare { right:12px; bottom:12px; background:#2fb6cf; font-size:17px; }
+  .canvas-btn.compare.holding { background:#1c93a8; }
+
+  /* A/B technique switch (dev only) */
+  #tech { position:absolute; bottom:126px; left:50%; transform:translateX(-50%); z-index:55;
+      display:flex; background:#fff; border:1px solid #c3c6ca; border-radius:8px; overflow:hidden; }
+  #tech button { background:none; border:none; color:#8a8f96; font-size:12px; font-weight:600;
       padding:7px 14px; font-family:inherit; }
-  #tech button.on { background:#2b2b2b; color:#3af0c0; }
-  #tech button:first-child.on { color:#ffd24a; }
+  #tech button.on { background:#eceef0; color:#e0567a; }
 
-  /* tool tray */
-  #ed-tools { position:absolute; bottom:44px; left:0; right:0; height:62px; z-index:55;
-      background:#0c0c0c; border-top:.5px solid #1e1e1e; display:flex; align-items:center;
-      justify-content:space-around; padding:0 4px; }
-  .tool { display:flex; flex-direction:column; align-items:center; gap:4px; color:#7d7d7d;
-      font-size:9.5px; width:56px; }
-  .tool.on { color:#fff; }
-  .tool .ic { width:30px; height:30px; border-radius:50%; border:1.5px solid currentColor;
-      display:flex; align-items:center; justify-content:center; font-size:15px; }
-  .tool.on .ic { background:#242424; }
+  /* reshape sub-bar: brush size + working sub-modes */
+  #reshape-bar { position:absolute; bottom:64px; left:0; right:0; height:56px; z-index:55;
+      background:#eceef0; border-top:.5px solid #cfd2d6; display:flex; align-items:center;
+      gap:10px; padding:0 12px; }
+  #reshape-bar .lbl { font-size:10px; color:#8a8f96; width:26px; text-transform:uppercase; letter-spacing:.5px; }
+  #brush { -webkit-appearance:none; appearance:none; flex:1; height:2px; background:#b9bcc0; border-radius:2px; }
+  #brush::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px; border-radius:50%;
+      background:#fff; border:1px solid #c3c6ca; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+  .submodes { display:flex; gap:4px; }
+  .submodes .tool { font-size:11px; color:#7a7f86; background:#fff; border:1px solid #cfd2d6;
+      border-radius:13px; padding:6px 11px; font-family:inherit; }
+  .submodes .tool.on { color:#fff; background:#ff6a7f; border-color:#ff6a7f; }
 
-  /* bottom bar: brush size + before/after */
-  #ed-bottom { position:absolute; bottom:0; left:0; right:0; height:44px; z-index:55;
-      background:#000; display:flex; align-items:center; gap:10px; padding:0 12px;
-      border-top:.5px solid #1e1e1e; }
-  #ed-bottom .lbl { font-size:10px; color:#7d7d7d; width:34px; }
-  #brush { -webkit-appearance:none; appearance:none; flex:1; height:2px; background:#3a3a3a; border-radius:2px; }
-  #brush::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; border-radius:50%;
-      background:#fff; box-shadow:0 0 3px rgba(0,0,0,.6); }
-  #compare { flex:0 0 auto; font-size:11px; color:#fff; background:#242424; border:1px solid #3a3a3a;
-      border-radius:14px; padding:7px 12px; font-family:inherit; }
-  #compare.holding { background:#3af0c0; color:#000; border-color:#3af0c0; }
-  #reset { flex:0 0 auto; font-size:11px; color:#ff8080; background:none; border:none; font-family:inherit; }
+  /* Facetune-style toolset (period dressing; Reshape is the live tool) */
+  #ed-tools { position:absolute; bottom:0; left:0; right:0; height:64px; z-index:55;
+      background:#f4f5f6; border-top:.5px solid #cfd2d6; display:flex; align-items:center;
+      overflow-x:auto; -webkit-overflow-scrolling:touch; padding:0 6px; }
+  .ftool { flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:5px;
+      color:#90969c; width:62px; font-size:10px; }
+  .ftool .ic { font-size:19px; line-height:1; }
+  .ftool.on { color:#2fb6cf; font-weight:600; }
 
   /* brush ring cursor */
-  #ring { position:absolute; z-index:45; border:1.5px solid rgba(255,255,255,.8);
+  #ring { position:absolute; z-index:45; border:1.5px solid rgba(255,255,255,.9);
       border-radius:50%; pointer-events:none; transform:translate(-50%,-50%); display:none;
-      box-shadow:0 0 0 1px rgba(0,0,0,.35), inset 0 0 0 1px rgba(0,0,0,.35); }
+      box-shadow:0 0 0 1px rgba(0,0,0,.45), inset 0 0 0 1px rgba(0,0,0,.45); }
 
   /* boot / help toast */
-  #toast { position:absolute; bottom:158px; left:12px; right:12px; z-index:70; text-align:center;
-      font-size:12px; color:#cfcfcf; background:rgba(20,20,20,.9); border:1px solid #2a2a2a;
-      border-radius:9px; padding:9px 12px; transition:opacity .4s; }
+  #toast { position:absolute; bottom:132px; left:12px; right:12px; z-index:70; text-align:center;
+      font-size:12px; color:#4a4f56; background:rgba(255,255,255,.95); border:1px solid #cfd2d6;
+      border-radius:9px; padding:9px 12px; transition:opacity .4s; box-shadow:0 1px 4px rgba(0,0,0,.12); }
   .hidden { display:none !important; }
   /* dev/comparison scaffolding — hidden in the prop build (liquify chosen) */
   body:not(.dev) .dev-only { display:none !important; }
-  #hint { position:absolute; bottom:64px; left:0; right:0; text-align:center; font-size:10px;
-      color:#666; z-index:54; pointer-events:none; }
 
   /* hidden file input for "load your own photo" */
   #filewrap { position:absolute; opacity:0; width:1px; height:1px; overflow:hidden; }
@@ -198,11 +203,11 @@
     </div>
   </section>
 
-  <!-- ===== EDITOR / WARP LAB ===== -->
+  <!-- ===== EDITOR — Preen (fictional 2015 Facetune-alike) ===== -->
   <section id="editor" class="screen">
     <div id="ed-top">
       <div class="x" id="ed-cancel">✕</div>
-      <div class="ttl">Reshape</div>
+      <div class="wordmark">preen<span class="spark">✦</span></div>
       <div class="ok" id="ed-save">✓</div>
     </div>
     <div id="ed-stage">
@@ -210,27 +215,36 @@
       <canvas id="glCanvas"></canvas>
       <div id="ed-badge" class="dev-only">—</div>
       <div id="ed-orig-flag">ORIGINAL</div>
+      <button id="reset" class="canvas-btn undo" title="Undo">↺</button>
+      <button id="compare" class="canvas-btn compare" title="Compare">▣</button>
     </div>
     <div id="ring"></div>
-    <div id="toast">Drag on the body to reshape her waist &amp; legs. Use <b>Enlarge</b> for the chest. Hold <b>Original</b> to flip before / after.</div>
+    <div id="toast">Drag on the body to reshape her waist &amp; legs. Tap <b>Enlarge</b> for the chest. Hold the blue <b>◱</b> to compare with the original.</div>
 
     <div id="tech" class="dev-only">
       <button id="tech-mesh">Mesh · 2D</button>
       <button id="tech-gl" class="on">Liquify · GL</button>
     </div>
 
-    <div id="ed-tools">
-      <div class="tool on" data-tool="push"><span class="ic">↔</span>Reshape</div>
-      <div class="tool" data-tool="slim"><span class="ic">)(</span>Slim</div>
-      <div class="tool" data-tool="grow"><span class="ic">◎</span>Enlarge</div>
-      <div class="tool" data-tool="restore"><span class="ic">↺</span>Restore</div>
-    </div>
-
-    <div id="ed-bottom">
+    <div id="reshape-bar">
       <span class="lbl">Size</span>
       <input id="brush" type="range" min="40" max="240" value="120">
-      <button id="reset">Reset</button>
-      <button id="compare">Original</button>
+      <div class="submodes">
+        <button class="tool on" data-tool="push">Shift</button>
+        <button class="tool" data-tool="grow">Enlarge</button>
+        <button class="tool" data-tool="restore">Restore</button>
+      </div>
+    </div>
+
+    <div id="ed-tools">
+      <div class="ftool"><span class="ic">✧</span>Whiten</div>
+      <div class="ftool"><span class="ic">◍</span>Smooth</div>
+      <div class="ftool"><span class="ic">◑</span>Details</div>
+      <div class="ftool on"><span class="ic">⇲</span>Reshape</div>
+      <div class="ftool"><span class="ic">✚</span>Patch</div>
+      <div class="ftool"><span class="ic">◎</span>Defocus</div>
+      <div class="ftool"><span class="ic">◐</span>Tones</div>
+      <div class="ftool"><span class="ic">▦</span>Filters</div>
     </div>
   </section>
 </div>
@@ -403,7 +417,7 @@ const statusbar=document.getElementById('statusbar');
 function show(name){
   for(const k in screens) screens[k].classList.toggle('active',k===name);
   // status bar text color: dark on white screens, light on the black editor
-  statusbar.classList.toggle('dark', name!=='editor');
+  statusbar.classList.add('dark');   // all three screens are light now
   if(name==='editor'){ requestAnimationFrame(()=>{ layoutEditor(); renderWarp(); }); }
   if(name==='photoview'){ requestAnimationFrame(drawPhotoView); }
 }
@@ -690,7 +704,7 @@ function bakeEditToSource(){
 /* ---------- load your own photo (for real-still fidelity testing) ---------- */
 /* triple-tap the editor title to open the file picker */
 let titleTaps=0,titleT=0;
-document.querySelector('#ed-top .ttl').addEventListener('click',()=>{
+document.querySelector('#ed-top .wordmark').addEventListener('click',()=>{
   const n=Date.now(); if(n-titleT<500) titleTaps++; else titleTaps=1; titleT=n;
   if(titleTaps>=3){ titleTaps=0; document.getElementById('fileinput').click(); }
 });
