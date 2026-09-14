@@ -282,7 +282,7 @@ document.addEventListener('touchend',e=>{ const n=Date.now(); if(n-_lastTouch<=3
       body with soft shading so waist / chest / legs are clearly warpable).
       Rendered once at 2x into an offscreen canvas we treat as the photo.
 ============================================================================ */
-const IMG_W = 720, IMG_H = 1000;           // portrait, 0.72 aspect
+const IMG_W = 750, IMG_H = 1000;           // 750×1000 = iPhone6 @2x width; matches embedded selfie
 const photo = document.createElement('canvas');
 photo.width = IMG_W; photo.height = IMG_H;
 function drawPlaceholder(ctx){
@@ -351,11 +351,33 @@ function drawPlaceholder(ctx){
   // faint measuring grid ON the figure so warp is readable in close-up (toggleable)
   window._gridPath=body;
 }
-drawPlaceholder(photo.getContext('2d'));
+drawPlaceholder(photo.getContext('2d'));   // initial paint + fallback if the photo fails to load
 
-// working copy of the current source image (placeholder OR user photo)
+// working copy of the current source image (the group selfie, or the placeholder)
 let srcCanvas = photo;
 let srcReady = true;
+
+/* ---- embedded group selfie (the Sc 1 / Sc 9 image being edited) ---- */
+/* Sibling image while iterating on GitHub Pages. For the final single-file offline
+   prop, swap this for an inlined "data:image/jpeg;base64,..." URI. */
+const PHOTO_SRC = "groupselfie.jpg";
+(function loadGroupSelfie(){
+  if (!PHOTO_SRC || PHOTO_SRC.indexOf('__') === 0) return;   // no photo embedded → keep placeholder
+  const im = new Image();
+  im.onload = function(){
+    const c = photo.getContext('2d');
+    const s = Math.max(IMG_W/im.width, IMG_H/im.height);      // cover-fit into the working canvas
+    const dw = im.width*s, dh = im.height*s;
+    c.clearRect(0,0,IMG_W,IMG_H);
+    c.drawImage(im, (IMG_W-dw)/2, (IMG_H-dh)/2, dw, dh);
+    glTexDirty = true;
+    if (typeof buildGallery === 'function') buildGallery();
+    if (screens.photoview.classList.contains('active')) drawPhotoView();
+    if (screens.editor.classList.contains('active')) resetWarp();
+  };
+  im.onerror = function(){ /* leave the placeholder in place */ };
+  im.src = PHOTO_SRC;
+})();
 
 /* optional grid overlay baked as separate layer for readability */
 const gridLayer=document.createElement('canvas'); gridLayer.width=IMG_W; gridLayer.height=IMG_H;
