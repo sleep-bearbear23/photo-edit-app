@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Photos">
 <meta name="format-detection" content="telephone=no">
-<title>SIL · iPhone Photos v04</title>
+<title>SIL · iPhone Photo v05 (photo only)</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#000;-webkit-text-size-adjust:100%;overscroll-behavior:none}
   *{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;box-sizing:border-box}
@@ -112,37 +112,8 @@ var CONFIG = {
 };
 /* camera roll, oldest first (iOS shows the newest at the bottom and opens scrolled to it).
    Slots with a file show the photo; others are blank until the graphics agent fills them (S36–S63). */
-var SLOTIMG = {   // same camera roll as the laptop's Preen library (Venice's NEW-Venice-16 set + Momo's film photo S25), 11/21
-  S25:'img/SIL_NEW-Playback-02_desktopPhoto_S25.jpg',
-  S36:'img/SIL_NEW-Venice-16_P01_flashMirror_S36.jpg',
-  S37:'img/SIL_NEW-Venice-16_P03_sleepover_S37.jpg',
-  S38:'img/SIL_NEW-Venice-16_P04_infusionWindow_S38.jpg',
-  S39:'img/SIL_NEW-Venice-16_P05_passengerSeat_S39.jpg',
-  S40:'img/SIL_NEW-Venice-16_P06_fingerClothesline_S40.jpg',
-  S41:'img/SIL_NEW-Venice-16_P07_planeWindow_S41.jpg',
-  S42:'img/SIL_NEW-Venice-16_P08_boba_S42.jpg',
-  S43:'img/SIL_NEW-Venice-16_P09_freewayNight_S43.jpg',
-  S44:'img/SIL_NEW-Venice-16_P10_washer_S44.jpg',
-  S45:'img/SIL_NEW-Venice-16_P11_kiwi_S45.jpg',
-  S46:'img/SIL_NEW-Venice-16_P12a_bedSelfie_S46.jpg',
-  S47:'img/SIL_NEW-Venice-16_P12b_bedSelfie_S47.jpg',
-  S48:'img/SIL_NEW-Venice-16_P12c_bedSelfie_S48.jpg',
-  S49:'img/SIL_NEW-Venice-16_P13a_carSelfie_S49.jpg',
-  S50:'img/SIL_NEW-Venice-16_P13b_carSelfie_S50.jpg',
-  S51:'img/SIL_NEW-Venice-16_P14a_backyardSelfie_S51.jpg',
-  S52:'img/SIL_NEW-Venice-16_P14b_backyardSelfie_S52.jpg',
-  S53:'img/SIL_NEW-Venice-16_P15_congee_S53.jpg',
-  S54:'img/SIL_NEW-Venice-16_P16_shavedSnow_S54.jpg',
-  S55:'img/SIL_NEW-Venice-16_P17_hotpot_S55.jpg',
-  S56:'img/SIL_NEW-Venice-16_P18_juneGloom_S56.jpg',
-  S57:'img/SIL_NEW-Venice-16_P19_parkingSunset_S57.jpg',
-  S58:'img/SIL_NEW-Venice-16_P20_ceilingStars_S58.jpg',
-  S59:'img/SIL_NEW-Venice-16_P21_notesSummer_S59.jpg',
-  S60:'img/SIL_NEW-Venice-16_P22_groupChat_S60.jpg',
-  S61:'img/SIL_NEW-Venice-16_P23_momTexts_S61.jpg'
-};
-var IMGBASE = '../sil-album/img/';   // light build: small thumbs for the grid, phone-size photos when opened
-var ROLL = ['S41', 'S37', 'S60', 'S25', 'S42', 'S56', 'S38', 'S57', 'S43', 'S39', 'S49', 'S50', 'S54', 'S46', 'S47', 'S48', 'S36', 'S40', 'S51', 'S52', 'S55', 'S58', 'S59', 'S53', 'S44', 'S45', 'S61', 'S22'];   // oldest first → newest; the hero S22 last (bottom-right)
+var SLOTIMG = {};   // photo-only build: just the hero, drawn in code (VFX marker) — no photo files
+var ROLL = ['S22'];
 var DAY = {   // date shown above each open photo — same days as the laptop's Preen library (Today = Thu July 16)
   S61:'Today', S45:'Today', S44:'Today', S53:'Today',
   S59:'Yesterday', S58:'Yesterday', S55:'Yesterday', S52:'Yesterday', S51:'Yesterday', S40:'Yesterday',
@@ -178,8 +149,7 @@ function vfxURL(w, h, mode){ w = Math.round(w); h = Math.round(h); var k = mode+
   if (!vfxCache[k]) vfxCache[k] = vfxCanvas(w, h, mode).toDataURL('image/png'); return vfxCache[k]; }
 function srcOf(sl, square){            // the hero becomes a marker drawn to the box's own shape (square grid cell / the photo's own shape)
   if (sl===CONFIG.hero && CONFIG.vfx!=='off'){ var z = photoSize(sl); return square ? vfxURL(400,400,CONFIG.vfx) : vfxURL(z[0],z[1],CONFIG.vfx); }
-  var f = SLOTIMG[sl]; if (!f) return f;
-  return IMGBASE + (square ? 'th/' : 'full/') + f.replace(/^img\//,'');
+  return SLOTIMG[sl];
 }
 
 var W = 375, H = 667;
@@ -308,7 +278,7 @@ function zoomTo(ns, px, py, anim){
   addEventListener('mouseup', function(){ if (md){ if (md.m){ clampPan(); setT(true); } md=null; } });
   st.addEventListener('click', function(){ if ('ontouchstart' in window) return; clearTimeout(tapTimer); tapTimer=setTimeout(toggleBars, 260); });
   st.addEventListener('dblclick', function(){ clearTimeout(tapTimer); });
-  tapHandler($('vBack'), closePhoto);
+  tapHandler($('vBack'), function(){ closePhoto(); });
 })();
 
 /* stop iOS page zoom / bounce (iOS 10+ ignores user-scalable=no) */
@@ -316,6 +286,9 @@ document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
 document.addEventListener('touchmove', function(e){ if (e.touches.length>1) e.preventDefault(); }, {passive:false});
 
 fitPreview(); drawStatus(); buildGrid();
+/* photo-only: open the hero right away, already full screen (no zoom-from-thumbnail), Back does nothing */
+(function(){ var cell = document.querySelector('.cell[data-i="0"]'); openPhoto(cell); V.s = 1; var c = centerFor(1); V.x = c.x; V.y = c.y; setT(false); })();
+closePhoto = function(){};
 </script>
 <script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function(){}); }</script>
 </body>
