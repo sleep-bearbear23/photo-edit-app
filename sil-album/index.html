@@ -7,10 +7,10 @@
      Written for iOS 12 Safari: touch events, no pointer events, no flex gap, no inset, no optional chaining. -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Photos">
 <meta name="format-detection" content="telephone=no">
-<title>SIL · iPhone Photo v05 (photo only)</title>
+<title>SIL · iPhone Photo v06 (photo only)</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#000;-webkit-text-size-adjust:100%;overscroll-behavior:none}
   *{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;box-sizing:border-box}
@@ -69,6 +69,8 @@
     background:rgba(248,248,248,.92);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid rgba(0,0,0,.25)}
   .slotlbl{position:absolute;left:4px;top:3px;font:bold 10px Arial;color:rgba(0,0,0,.4)}
   body.nolabels .slotlbl{display:none}
+  #sb{display:none!important}
+  .nav{height:44px;padding-top:0}
 </style>
 </head>
 <body class="nolabels">
@@ -223,7 +225,7 @@ function openPhoto(cell){
   requestAnimationFrame(function(){ requestAnimationFrame(function(){ V.s = 1; var c = centerFor(1); V.x=c.x; V.y=c.y; setT(true); }); });
 }
 function closePhoto(){ $('viewer').classList.remove('show'); $('sb').classList.remove('light'); }
-function toggleBars(){ var v=$('viewer'); v.classList.toggle('black'); $('sb').classList.toggle('light', v.classList.contains('black')); }
+function toggleBars(){ return;   /* off: hiding the bars would leave the real white status bar over black */  var v=$('viewer'); v.classList.toggle('black'); $('sb').classList.toggle('light', v.classList.contains('black')); }
 function zoomTo(ns, px, py, anim){
   ns = Math.max(1, Math.min(4, ns));
   var k = ns / V.s; V.x = px - (px - V.x)*k; V.y = py - (py - V.y)*k; V.s = ns; clampPan(); setT(anim);
@@ -285,6 +287,8 @@ function zoomTo(ns, px, py, anim){
 document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
 document.addEventListener('touchmove', function(e){ if (e.touches.length>1) e.preventDefault(); }, {passive:false});
 
+(function(){ var mob = Math.min(screen.width, screen.height) <= 420 && 'ontouchstart' in window;   // on the phone: fill exactly the space under the real status bar
+  if (mob){ W = window.innerWidth; H = window.innerHeight; $('phone').style.width = W+'px'; $('phone').style.height = H+'px'; $('viewer').style.width = W+'px'; $('viewer').style.height = H+'px'; } })();
 fitPreview(); drawStatus(); buildGrid();
 /* photo-only: open the hero right away, already full screen (no zoom-from-thumbnail), Back does nothing */
 (function(){ var cell = document.querySelector('.cell[data-i="0"]'); openPhoto(cell); V.s = 1; var c = centerFor(1); V.x = c.x; V.y = c.y; setT(false); })();
