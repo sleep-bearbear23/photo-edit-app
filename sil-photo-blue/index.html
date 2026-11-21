@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- SILHOUETTE · iPhone 6 playback · Photos album (iOS 8, summer 2015) · NEW-Playback-03
+     Fictional, hand-made in code. Runs on the prop iPhone 6 (iOS 12 max) as a home-screen web app.
+     Written for iOS 12 Safari: touch events, no pointer events, no flex gap, no inset, no optional chaining. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Photos">
+<meta name="format-detection" content="telephone=no">
+<title>SIL · iPhone Photo v06 (photo only)</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;-webkit-text-size-adjust:100%;overscroll-behavior:none}
+  *{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;box-sizing:border-box}
+  #phone{position:absolute;left:0;top:0;width:375px;height:667px;overflow:hidden;background:#fff;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;color:#000;transform-origin:0 0}
+  /* preview on a computer: show the phone in a frame */
+  body.preview{background:#e9e9ec}
+  body.preview #phone{border-radius:4px;box-shadow:0 0 0 12px #1b1b1d,0 0 0 13px #555,0 30px 80px rgba(0,0,0,.35)}
+
+  /* ---------- iOS 8 status bar ---------- */
+  #sb{position:absolute;left:0;right:0;top:0;height:20px;z-index:50;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;
+    padding:0 6px;font-size:12px;font-weight:500;color:#000;pointer-events:none}
+  #sb .l,#sb .r{-webkit-flex:1;flex:1;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center}
+  #sb .r{-webkit-justify-content:flex-end;justify-content:flex-end}
+  #sb .t{font-weight:600}
+  #sb .dots i{display:inline-block;width:5.5px;height:5.5px;border-radius:50%;background:#000;margin-right:1.5px;vertical-align:middle}
+  #sb .dots i.o{background:none;box-shadow:inset 0 0 0 1px #000}
+  #sb.light{color:#fff}#sb.light .dots i{background:#fff}#sb.light .dots i.o{background:none;box-shadow:inset 0 0 0 1px #fff}
+  #sb.light svg *{fill:#fff}#sb.light svg .s{fill:none;stroke:#fff}
+  #sb svg{display:block}
+
+  /* ---------- album (grid) ---------- */
+  #album{position:absolute;left:0;top:0;width:375px;height:667px}
+  .nav{position:absolute;left:0;right:0;top:0;height:64px;padding-top:20px;z-index:20;
+    background:rgba(248,248,248,.92);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+    border-bottom:.5px solid rgba(0,0,0,.25)}
+  .nav .in{position:relative;height:44px}
+  .nav .ti{position:absolute;left:90px;right:90px;top:0;height:44px;line-height:44px;text-align:center;font-size:17px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nav .ti2{position:absolute;left:80px;right:80px;top:4px;text-align:center;font-size:15px;font-weight:600;line-height:18px}
+  .nav .ti2 small{display:block;font-size:12px;font-weight:400;color:#000}
+  .nav .bk{position:absolute;left:8px;top:0;height:44px;line-height:44px;color:#007aff;font-size:17px;padding-left:14px}
+  .nav .bk:before{content:"";position:absolute;left:2px;top:15px;width:11px;height:11px;border-left:2.6px solid #007aff;border-bottom:2.6px solid #007aff;-webkit-transform:rotate(45deg);transform:rotate(45deg);border-radius:1px}
+  .nav .rt{position:absolute;right:10px;top:0;height:44px;line-height:44px;color:#007aff;font-size:17px}
+  #grid{position:absolute;left:0;top:0;width:375px;height:667px;overflow-y:scroll;-webkit-overflow-scrolling:touch;padding:64px 0 49px}
+  #grid .cells{overflow:hidden}
+  .cell{float:left;width:93px;height:93px;margin:0 1px 1px 0;background:#e7e7ea center/cover no-repeat}
+  .cell:nth-child(4n){margin-right:0}
+  .cell.blank{background-color:#e2e3e6}
+  .count{clear:both;text-align:center;font-size:17px;color:#000;padding:16px 0 20px}
+  .tabs{position:absolute;left:0;right:0;bottom:0;height:49px;z-index:20;display:-webkit-flex;display:flex;
+    background:rgba(248,248,248,.92);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid rgba(0,0,0,.25)}
+  .tab{-webkit-flex:1;flex:1;text-align:center;font-size:10px;color:#929292;padding-top:5px}
+  .tab svg{display:block;margin:0 auto 2px}
+  .tab.on{color:#007aff}
+
+  /* ---------- single-photo viewer ---------- */
+  #viewer{position:absolute;left:0;top:0;width:375px;height:667px;background:#fff;z-index:30;display:none;overflow:hidden}
+  #viewer.show{display:block}
+  #viewer.black{background:#000}
+  #stagePh{position:absolute;left:0;top:0;width:375px;height:667px}
+  #ph{position:absolute;left:0;top:0;-webkit-transform-origin:0 0;transform-origin:0 0;background:#d9dadd center/100% 100% no-repeat}
+  #ph.anim{-webkit-transition:-webkit-transform .28s cubic-bezier(.2,.7,.3,1);transition:transform .28s cubic-bezier(.2,.7,.3,1)}
+  #vnav,#vbar{-webkit-transition:opacity .2s;transition:opacity .2s}
+  #viewer.black #vnav,#viewer.black #vbar{opacity:0;pointer-events:none}
+  #vbar{position:absolute;left:0;right:0;bottom:0;height:44px;z-index:20;display:-webkit-flex;display:flex;-webkit-align-items:center;align-items:center;-webkit-justify-content:space-between;justify-content:space-between;padding:0 18px;
+    background:rgba(248,248,248,.92);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid rgba(0,0,0,.25)}
+  .slotlbl{position:absolute;left:4px;top:3px;font:bold 10px Arial;color:rgba(0,0,0,.4)}
+  body.nolabels .slotlbl{display:none}
+  #sb{display:none!important}
+  .nav{height:44px;padding-top:0}
+</style>
+</head>
+<body class="nolabels">
+<div id="phone">
+  <div id="sb"><div class="l"><span class="dots"><i></i><i></i><i></i><i></i><i class="o"></i></span><span id="sbCarrier" style="margin-left:3px"></span>
+      <svg style="margin-left:4px" width="14" height="10" viewBox="0 0 14 10"><path d="M7 10L4.9 7.6a3 3 0 0 1 4.2 0z" /><path d="M2.9 5.4a5.8 5.8 0 0 1 8.2 0l-1 1.1a4.3 4.3 0 0 0-6.2 0zM.8 3.2a8.9 8.9 0 0 1 12.4 0l-1 1.1a7.4 7.4 0 0 0-10.4 0z"/></svg></div>
+    <div class="t" id="sbTime"></div>
+    <div class="r"><span id="sbPct"></span><svg style="margin-left:3px" width="25" height="11" viewBox="0 0 25 11"><rect class="s" x=".5" y=".5" width="21.5" height="10" rx="2" fill="none" stroke="#000"/><rect id="sbFill" x="2" y="2" width="18" height="7" rx="1"/><path d="M23 3.6v3.8a1.6 1.6 0 0 0 0-3.8z"/></svg></div></div>
+
+  <div id="album">
+    <div id="grid"><div class="cells" id="cells"></div><div class="count" id="count"></div></div>
+    <div class="nav"><div class="in"><span class="bk">Albums</span><div class="ti">Recently Added</div><span class="rt">Select</span></div></div>
+    <div class="tabs">
+      <div class="tab"><svg width="28" height="25" viewBox="0 0 28 25"><rect x="6" y="2" width="19" height="15" rx="1.5" fill="none" stroke="#929292" stroke-width="1.4"/><rect x="2.5" y="6" width="19" height="15" rx="1.5" fill="#f8f8f8" stroke="#929292" stroke-width="1.4"/></svg>Photos</div>
+      <div class="tab"><svg width="30" height="25" viewBox="0 0 30 25"><path d="M8 20h15a5 5 0 0 0 .6-10A7 7 0 0 0 10 8.4 5.8 5.8 0 0 0 8 20z" fill="none" stroke="#929292" stroke-width="1.4"/></svg>Shared</div>
+      <div class="tab on"><svg width="28" height="25" viewBox="0 0 28 25"><rect x="6.5" y="2.5" width="15" height="1.2" fill="#007aff"/><rect x="4.5" y="5" width="19" height="1.2" fill="#007aff"/><rect x="2.5" y="7.5" width="23" height="14" rx="1" fill="#007aff"/></svg>Albums</div>
+    </div>
+  </div>
+
+  <div id="viewer">
+    <div id="stagePh"><div id="ph"></div></div>
+    <div class="nav" id="vnav"><div class="in"><span class="bk" id="vBack">Back</span>
+      <div class="ti2"><span id="vDate"></span><small id="vTime"></small></div><span class="rt">Edit</span></div></div>
+    <div id="vbar">
+      <svg width="20" height="26" viewBox="0 0 20 26"><path d="M6 9H2v16h16V9h-4" fill="none" stroke="#007aff" stroke-width="1.5"/><path d="M10 17V1M5.5 5.5L10 1l4.5 4.5" fill="none" stroke="#007aff" stroke-width="1.5"/></svg>
+      <svg width="24" height="22" viewBox="0 0 24 22"><path d="M12 20.5S2 14 2 7.6A5 5 0 0 1 12 5a5 5 0 0 1 10 2.6C22 14 12 20.5 12 20.5z" fill="none" stroke="#007aff" stroke-width="1.5"/></svg>
+      <svg width="20" height="24" viewBox="0 0 20 24"><path d="M2 5h16M7 5V2h6v3M4 5l1 17h10l1-17M8 9v9M12 9v9" fill="none" stroke="#007aff" stroke-width="1.5"/></svg>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =================== CONFIG — edit here =================== */
+var CONFIG = {
+  time: '3:12 PM',        // status-bar clock (Sc 4: in the car after the school pickup)
+  battery: 82,
+  carrier: '',            // carrier name after the signal dots ('' = none; no real carrier names)
+  hero: 'S22',            // the group selfie (G-XM-03)
+  heroDate: 'Today', heroTime: '2:14 PM',
+  vfx: 'blue'          // hero not shot yet: 'bracket' = black + blue VFX markers, 'blue' = blue-screen, 'off' = photo. URL ?vfx=blue
+};
+/* camera roll, oldest first (iOS shows the newest at the bottom and opens scrolled to it).
+   Slots with a file show the photo; others are blank until the graphics agent fills them (S36–S63). */
+var SLOTIMG = {};   // photo-only build: just the hero, drawn in code (VFX marker) — no photo files
+var ROLL = ['S22'];
+var DAY = {   // date shown above each open photo — same days as the laptop's Preen library (Today = Thu July 16)
+  S61:'Today', S45:'Today', S44:'Today', S53:'Today',
+  S59:'Yesterday', S58:'Yesterday', S55:'Yesterday', S52:'Yesterday', S51:'Yesterday', S40:'Yesterday',
+  S36:'Yesterday', S48:'Yesterday', S47:'Yesterday', S46:'Yesterday', S54:'Yesterday',
+  S41:'July 2, 2015', S37:'July 2, 2015', S60:'July 4, 2015', S25:'July 5, 2015', S42:'July 6, 2015',
+  S56:'July 7, 2015', S38:'July 8, 2015', S57:'July 8, 2015', S43:'July 10, 2015',
+  S39:'July 11, 2015', S49:'July 11, 2015', S50:'July 11, 2015'
+};
+var SIZES = {S22:[1600,1200],   // S22 = landscape 4:3 (iPhone 6: 3264×2448)
+             S25:[480,300], S36:[1050,1400], S37:[1400,1050], S38:[1050,1400], S39:[1400,1050], S40:[1050,1400], S41:[1400,1050], S42:[1050,1400], S43:[1400,1050], S44:[1400,1050], S45:[1050,1400], S46:[1045,1400], S47:[1045,1400], S48:[1045,1400], S49:[1045,1400], S50:[1045,1400], S51:[1045,1400], S52:[1045,1400], S53:[1050,1400], S54:[1400,1050], S55:[1400,1050], S56:[1050,1400], S57:[1400,1050], S58:[1050,1400], S59:[787,1400], S60:[787,1400], S61:[787,1400]};   // w,h of each photo
+/* ========================================================== */
+
+var $ = function(id){ return document.getElementById(id); };
+(function(){ var m = /[?&]vfx=(bracket|blue|off)/.exec(location.search); if (m) CONFIG.vfx = m[1]; })();
+/* ---------- VFX markers: blue corner brackets + centre cross, for the photo that isn't shot yet ----------
+   'bracket' = black box with blue brackets + cross · 'blue' = full blue-screen box, markers in a darker blue
+   (same hue, so they key out with the screen but stay trackable) · 'off' = the photo itself (or its stand-in) */
+var VFX = {bg:'#000000', mark:'#1d63ff', blue:'#0047ff', markOnBlue:'#00229a'};
+var vfxCache = {};
+function vfxDraw(x, w, h, mode, thick){
+  var m = Math.min(w, h), t = Math.max(2, Math.round(m*(thick||0.016))), a = Math.round(m*0.12),
+      i = Math.round(m*0.035), c = Math.round(m*0.06), cx = Math.round(w/2), cy = Math.round(h/2);
+  x.fillStyle = mode==='blue' ? VFX.blue : VFX.bg; x.fillRect(0, 0, w, h);
+  x.fillStyle = mode==='blue' ? VFX.markOnBlue : VFX.mark;
+  x.fillRect(i, i, a, t);         x.fillRect(i, i, t, a);                 // top-left
+  x.fillRect(w-i-a, i, a, t);     x.fillRect(w-i-t, i, t, a);             // top-right
+  x.fillRect(i, h-i-t, a, t);     x.fillRect(i, h-i-a, t, a);             // bottom-left
+  x.fillRect(w-i-a, h-i-t, a, t); x.fillRect(w-i-t, h-i-a, t, a);         // bottom-right
+  x.fillRect(cx-c, cy-Math.round(t/2), 2*c, t); x.fillRect(cx-Math.round(t/2), cy-c, t, 2*c);   // centre cross
+}
+function vfxCanvas(w, h, mode){ var c = document.createElement('canvas'); c.width = w; c.height = h; vfxDraw(c.getContext('2d'), w, h, mode); return c; }
+function vfxURL(w, h, mode){ w = Math.round(w); h = Math.round(h); var k = mode+w+'x'+h;
+  if (!vfxCache[k]) vfxCache[k] = vfxCanvas(w, h, mode).toDataURL('image/png'); return vfxCache[k]; }
+function srcOf(sl, square){            // the hero becomes a marker drawn to the box's own shape (square grid cell / the photo's own shape)
+  if (sl===CONFIG.hero && CONFIG.vfx!=='off'){ var z = photoSize(sl); return square ? vfxURL(400,400,CONFIG.vfx) : vfxURL(z[0],z[1],CONFIG.vfx); }
+  return SLOTIMG[sl];
+}
+
+var W = 375, H = 667;
+
+/* preview on a computer: fit the phone in the window */
+function fitPreview(){
+  var mobile = Math.min(screen.width, screen.height) <= 420 && 'ontouchstart' in window;
+  var ph = $('phone');
+  if (mobile){ document.body.classList.remove('preview'); ph.style.transform=''; return; }
+  document.body.classList.add('preview');
+  var s = Math.min(1.25, (innerHeight-60)/H, (innerWidth-60)/W);
+  ph.style.transform = 'translate(' + Math.round((innerWidth-W*s)/2) + 'px,' + Math.round((innerHeight-H*s)/2) + 'px) scale(' + s + ')';
+}
+addEventListener('resize', fitPreview);
+
+/* status bar */
+function drawStatus(){
+  $('sbTime').textContent = CONFIG.time; $('sbPct').textContent = CONFIG.battery + '%';
+  $('sbFill').setAttribute('width', (18*CONFIG.battery/100).toFixed(1)); $('sbCarrier').textContent = CONFIG.carrier;
+}
+
+/* grid */
+function buildGrid(){
+  var c = $('cells'), html = '';
+  for (var i=0;i<ROLL.length;i++){
+    var sl = ROLL[i], src = srcOf(sl, true);
+    html += '<div class="cell' + (src?'':' blank') + '" data-i="' + i + '"' + (src?' style="background-image:url(\'' + src + '\')"':'') + '>' + (src?'':'<span class="slotlbl">'+sl+'</span>') + '</div>';
+  }
+  c.innerHTML = html;
+  $('count').textContent = ROLL.length + ' Photos';
+  setTimeout(function(){ $('grid').scrollTop = 1e6; }, 30);      // open at the bottom, like iOS
+  var cells = c.querySelectorAll('.cell');
+  for (var k=0;k<cells.length;k++) tapHandler(cells[k], openPhoto);
+}
+/* tap = touch without moving (so scrolling the grid never opens a photo) */
+function tapHandler(el, fn){
+  var sx, sy, moved;
+  el.addEventListener('touchstart', function(e){ var t=e.touches[0]; sx=t.clientX; sy=t.clientY; moved=false; }, {passive:true});
+  el.addEventListener('touchmove', function(e){ var t=e.touches[0]; if (Math.abs(t.clientX-sx)>8 || Math.abs(t.clientY-sy)>8) moved=true; }, {passive:true});
+  el.addEventListener('touchend', function(e){ if (!moved){ e.preventDefault(); fn(el); } });
+  el.addEventListener('click', function(){ if (!('ontouchstart' in window)) fn(el); });
+}
+
+/* ---------- viewer with pinch / pan / double-tap zoom ---------- */
+var V = {s:1, x:0, y:0, w:0, h:0, fit:1, slot:null};
+function photoSize(sl){ return SIZES[sl] || [1200,1600]; }
+function setT(anim){
+  var ph = $('ph'); ph.classList.toggle('anim', !!anim);
+  var tr = 'translate(' + V.x + 'px,' + V.y + 'px) scale(' + (V.fit*V.s) + ')';
+  ph.style.webkitTransform = tr; ph.style.transform = tr;
+}
+function centerFor(s){ return {x:(W - V.w*V.fit*s)/2, y:(H - V.h*V.fit*s)/2}; }
+function clampPan(){
+  var cw = V.w*V.fit*V.s, ch = V.h*V.fit*V.s;
+  if (cw <= W) V.x = (W-cw)/2; else V.x = Math.min(0, Math.max(W-cw, V.x));
+  if (ch <= H) V.y = (H-ch)/2; else V.y = Math.min(0, Math.max(H-ch, V.y));
+}
+function openPhoto(cell){
+  var i = +cell.getAttribute('data-i'), sl = ROLL[i], sz = photoSize(sl), src = srcOf(sl, false);
+  V.slot = sl; V.w = sz[0]; V.h = sz[1]; V.fit = Math.min(W/V.w, H/V.h); V.s = 1;
+  var ph = $('ph'); ph.style.width = V.w + 'px'; ph.style.height = V.h + 'px';
+  ph.style.backgroundImage = src ? 'url(\'' + src + '\')' : 'none';
+  ph.innerHTML = src ? '' : '<span class="slotlbl" style="font-size:40px">' + sl + (sl===CONFIG.hero?' · G-XM-03 group selfie':'') + '</span>';
+  $('vDate').textContent = sl===CONFIG.hero ? CONFIG.heroDate : (DAY[sl] || 'July 2015');
+  $('vTime').textContent = sl===CONFIG.hero ? CONFIG.heroTime : '';
+  // start at the thumbnail, then zoom to full screen (iOS 8 open animation)
+  var r = cell.getBoundingClientRect(), pr = $('phone').getBoundingClientRect(), k = pr.width/W;
+  var tx = (r.left-pr.left)/k, ty = (r.top-pr.top)/k, ts = 93/Math.max(V.w*V.fit, V.h*V.fit);
+  V.x = tx + (93 - V.w*V.fit*ts)/2; V.y = ty + (93 - V.h*V.fit*ts)/2; V.s = ts; setT(false);
+  $('viewer').classList.add('show'); $('viewer').classList.remove('black'); $('sb').classList.remove('light');
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ V.s = 1; var c = centerFor(1); V.x=c.x; V.y=c.y; setT(true); }); });
+}
+function closePhoto(){ $('viewer').classList.remove('show'); $('sb').classList.remove('light'); }
+function toggleBars(){ return;   /* off: hiding the bars would leave the real white status bar over black */  var v=$('viewer'); v.classList.toggle('black'); $('sb').classList.toggle('light', v.classList.contains('black')); }
+function zoomTo(ns, px, py, anim){
+  ns = Math.max(1, Math.min(4, ns));
+  var k = ns / V.s; V.x = px - (px - V.x)*k; V.y = py - (py - V.y)*k; V.s = ns; clampPan(); setT(anim);
+}
+(function wireViewer(){
+  var st = $('stagePh'), g = null, lastTap = 0, tapTimer = null;
+  var pt = function(t){ var pr=$('phone').getBoundingClientRect(), k=pr.width/W; return {x:(t.clientX-pr.left)/k, y:(t.clientY-pr.top)/k}; };
+  st.addEventListener('touchstart', function(e){
+    e.preventDefault();
+    if (e.touches.length===2){
+      var a=pt(e.touches[0]), b=pt(e.touches[1]);
+      g = {mode:'pinch', d0:Math.hypot(a.x-b.x,a.y-b.y), m0:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}, s0:V.s, x0:V.x, y0:V.y, moved:true};
+    } else if (e.touches.length===1){
+      var p=pt(e.touches[0]); g = {mode:'pan', p0:p, x0:V.x, y0:V.y, moved:false};
+    }
+  }, {passive:false});
+  st.addEventListener('touchmove', function(e){
+    e.preventDefault(); if (!g) return;
+    if (g.mode==='pinch' && e.touches.length>=2){
+      var a=pt(e.touches[0]), b=pt(e.touches[1]), d=Math.hypot(a.x-b.x,a.y-b.y), m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+      var ns = Math.max(.5, Math.min(5, g.s0*d/g.d0)), k = ns/g.s0;
+      V.s = ns; V.x = m.x - (g.m0.x - g.x0)*k; V.y = m.y - (g.m0.y - g.y0)*k; setT(false);
+    } else if (g.mode==='pan' && e.touches.length===1){
+      var p=pt(e.touches[0]); if (Math.abs(p.x-g.p0.x)+Math.abs(p.y-g.p0.y) > 6) g.moved=true;
+      if (V.s>1.01){ V.x = g.x0 + (p.x-g.p0.x); V.y = g.y0 + (p.y-g.p0.y); setT(false); }
+    }
+  }, {passive:false});
+  st.addEventListener('touchend', function(e){
+    e.preventDefault(); if (!g) return;
+    if (e.touches.length===1 && g.mode==='pinch'){ var p=pt(e.touches[0]); g={mode:'pan', p0:p, x0:V.x, y0:V.y, moved:true}; }
+    if (e.touches.length) return;
+    if (V.s < 1){ V.s=1; var c=centerFor(1); V.x=c.x; V.y=c.y; setT(true); }
+    else if (V.s > 4){ zoomTo(4, W/2, H/2, true); }
+    else { clampPan(); setT(true); }
+    if (g.mode==='pan' && !g.moved){
+      var now = Date.now(), p0 = g.p0;
+      if (now - lastTap < 300){ clearTimeout(tapTimer); lastTap = 0;            // double-tap: zoom in at the finger / back out
+        if (V.s > 1.05){ V.s=1; var c2=centerFor(1); V.x=c2.x; V.y=c2.y; setT(true); } else zoomTo(2.5, p0.x, p0.y, true); }
+      else { lastTap = now; tapTimer = setTimeout(toggleBars, 300); }              // single tap: hide / show the bars
+    }
+    g = null;
+  }, {passive:false});
+  // computer preview: trackpad pinch (ctrl+wheel), scroll to pan, double-click to zoom, click to toggle bars
+  st.addEventListener('wheel', function(e){ e.preventDefault(); var pr=$('phone').getBoundingClientRect(), k=pr.width/W;
+    var p={x:(e.clientX-pr.left)/k, y:(e.clientY-pr.top)/k};
+    if (e.ctrlKey) zoomTo(V.s*Math.exp(-e.deltaY*.01), p.x, p.y, false); else { V.x-=e.deltaX/k; V.y-=e.deltaY/k; clampPan(); setT(false); } }, {passive:false});
+  st.addEventListener('dblclick', function(e){ var pr=$('phone').getBoundingClientRect(), k=pr.width/W;
+    if (V.s>1.05){ V.s=1; var c=centerFor(1); V.x=c.x; V.y=c.y; setT(true); } else zoomTo(2.5,(e.clientX-pr.left)/k,(e.clientY-pr.top)/k,true); });
+  var md=null; st.addEventListener('mousedown', function(e){ md={x:e.clientX,y:e.clientY,x0:V.x,y0:V.y,m:false}; });
+  addEventListener('mousemove', function(e){ if(!md) return; var k=$('phone').getBoundingClientRect().width/W;
+    if (Math.abs(e.clientX-md.x)+Math.abs(e.clientY-md.y)>4) md.m=true; if (V.s>1.01){ V.x=md.x0+(e.clientX-md.x)/k; V.y=md.y0+(e.clientY-md.y)/k; setT(false);} });
+  addEventListener('mouseup', function(){ if (md){ if (md.m){ clampPan(); setT(true); } md=null; } });
+  st.addEventListener('click', function(){ if ('ontouchstart' in window) return; clearTimeout(tapTimer); tapTimer=setTimeout(toggleBars, 260); });
+  st.addEventListener('dblclick', function(){ clearTimeout(tapTimer); });
+  tapHandler($('vBack'), function(){ closePhoto(); });
+})();
+
+/* stop iOS page zoom / bounce (iOS 10+ ignores user-scalable=no) */
+document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+document.addEventListener('touchmove', function(e){ if (e.touches.length>1) e.preventDefault(); }, {passive:false});
+
+(function(){ var mob = Math.min(screen.width, screen.height) <= 420 && 'ontouchstart' in window;   // on the phone: fill exactly the space under the real status bar
+  if (mob){ W = window.innerWidth; H = window.innerHeight; $('phone').style.width = W+'px'; $('phone').style.height = H+'px'; $('viewer').style.width = W+'px'; $('viewer').style.height = H+'px'; } })();
+fitPreview(); drawStatus(); buildGrid();
+/* photo-only: open the hero right away, already full screen (no zoom-from-thumbnail), Back does nothing */
+(function(){ var cell = document.querySelector('.cell[data-i="0"]'); openPhoto(cell); V.s = 1; var c = centerFor(1); V.x = c.x; V.y = c.y; setT(false); })();
+closePhoto = function(){};
+</script>
+<script>if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function(){}); }</script>
+</body>
+</html>
